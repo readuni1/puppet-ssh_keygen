@@ -40,8 +40,12 @@
 #
 define ssh_keygen (
   Optional[String] $user     = undef,
+  Optional[String] $group    = undef,
   Enum['rsa', 'dsa', 'ecdsa', 'ed25519', 'rsa1'] $type   = 'rsa',
-  Optional[Integer] $bits    = undef,
+  Boolean           $from_master = false,
+  String            $master_dir  = 'ssh',
+  String            $host_name   = $fqdn,
+  Optional[Integer] $bits        = undef,
   Optional[Stdlib::Absolutepath] $home     = undef,
   Optional[Stdlib::Absolutepath] $filename = undef,
   Optional[String] $comment  = undef,
@@ -53,6 +57,11 @@ define ssh_keygen (
   $_user = $user ? {
     undef   => $name,
     default => $user,
+  }
+
+  $_group = $group ? {
+    undef   => $user,
+    default => $group,
   }
 
   $_home = $home ? {
@@ -68,39 +77,78 @@ define ssh_keygen (
     default => $filename,
   }
 
-  $type_opt = shell_join(['-t', $type])
+  if  $from_master {
+    $_comment = $comment ? {
+      undef   => "${_user}@${host_name}",
+      default => $comment,
+    }
 
-  $bits_opt = $bits ? {
-    undef   => undef,
-    default => shell_join(['-b', $bits])
-  }
+    # Generate RSA keys reliably
+    $key_priv = ssh_keygen({
+      name => $name,
+      type => $type,
+      size => $bits,
+      comment => $_comment,
+      dir => $master_dir,
+      request => 'private'
+      }) 
+    $key_pub  = ssh_keygen({
+      name => $name,
+      type => $type,
+      size => $bits,
+      comment => $_comment,
+      dir => $master_dir,
+      request => 'public'
+      }) 
 
-  $filename_opt = shell_join(['-f', $_filename])
-  $passphrase_opt = shell_join(['-N', ''])
+    file { $_filename:
+      owner   => $_user,
+      group   => $_group,
+      mode    => 0600,
+      content => $key_priv,
+    }
 
-  $comment_opt = $comment ? {
-    undef   => undef,
-    default => shell_join(['-C', $comment])
-  }
+    file { "${_filename}.pub":
+      owner   => $_user,
+      group   => $_group,
+      mode    => 0644,
+      content => $key_pub,
+    }
+  } else {
+    $type_opt = shell_join(['-t', $type])
 
-  $options_opt = $options ? {
-    undef   => undef,
-    default => shell_join($options),
-  }
+    $bits_opt = $bits ? {
+      undef   => undef,
+      default => shell_join(['-b', $bits])
+    }
 
-  $command = delete_undef_values([
-    'ssh-keygen',
-    $type_opt,
-    $bits_opt,
-    $filename_opt,
-    $passphrase_opt,
-    $comment_opt,
-    $options_opt,
-  ])
+    $filename_opt = shell_join(['-f', $_filename])
+    $passphrase_opt = shell_join(['-N', ''])
 
-  exec { "ssh_keygen-${name}":
-    command => join($command, ' '),
-    user    => $_user,
-    creates => $_filename,
+    $comment_opt = $comment ? {
+      undef   => undef,
+      default => shell_join(['-C', $comment])
+    }
+  
+    $options_opt = $options ? {
+      undef   => undef,
+      default => shell_join($options),
+    }
+
+    $command = delete_undef_values([
+      'ssh-keygen',
+      $type_opt,
+      $bits_opt,
+      $filename_opt,
+      $passphrase_opt,
+      $comment_opt,
+      $options_opt,
+    ])
+
+    exec { "ssh_keygen-${name}":
+      command => join($command, ' '),
+      user    => $_user,
+      creates => $_filename,
+    }
   }
 }
