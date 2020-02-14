@@ -45,7 +45,7 @@ define ssh_keygen (
   Boolean           $from_master = false,
   String            $master_dir  = 'ssh',
   String            $host_name   = $fqdn,
-  Optional[Integer] $bits        = undef,
+  Optional[Integer] $bits        = 2048,
   Optional[Stdlib::Absolutepath] $home     = undef,
   Optional[Stdlib::Absolutepath] $filename = undef,
   Optional[String] $comment  = undef,
