@@ -43,7 +43,7 @@ module Puppet::Parser::Functions
     # Do my keys exist? Well, keygen if they don't!
     begin
       unless File.exists?("#{fullpath}/#{config['name']}") then
-        %x[/usr/bin/ssh-keygen -t #{config['type']} -b #{config['size']} -P '' -C #{config['comment']} -f #{fullpath}/#{config['name']}]
+        %x[/usr/bin/ssh-keygen -t #{config['type']} -b #{config['size']} -P '' -C '#{config['comment']}' -f #{fullpath}/#{config['name']}]
       end
     rescue => e
       raise Puppet::ParseError, "ssh_keygen(): Unable to generate ssh key (#{e})"
