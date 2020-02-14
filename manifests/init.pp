@@ -104,14 +104,14 @@ define ssh_keygen (
     file { $_filename:
       owner   => $_user,
       group   => $_group,
-      mode    => 0600,
+      mode    => '0600',
       content => $key_priv,
     }
 
     file { "${_filename}.pub":
       owner   => $_user,
       group   => $_group,
-      mode    => 0644,
+      mode    => '0644',
       content => $key_pub,
     }
   } else {
