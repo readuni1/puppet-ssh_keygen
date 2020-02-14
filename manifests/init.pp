@@ -90,7 +90,7 @@ define ssh_keygen (
       size => $bits,
       comment => $_comment,
       dir => $master_dir,
-      request => 'private'
+      public => false
       }) 
     $key_pub  = ssh_keygen({
       name => $name,
@@ -98,7 +98,7 @@ define ssh_keygen (
       size => $bits,
       comment => $_comment,
       dir => $master_dir,
-      request => 'public'
+      public => true
       }) 
 
     file { $_filename:
